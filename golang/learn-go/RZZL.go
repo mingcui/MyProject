@@ -6,12 +6,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // set gloab var
 var usageText = `
+This Promgram should follow below order to run:
+1. user Ri to delete old version images
+2. user R to run
 
 Usage flagExp2 [OPTION]
 
@@ -21,29 +26,74 @@ Usage flagExp2 [OPTION]
 
 example: 
 
-	flagExp2 -R -S ServiceName    # run service
+	flagExp2 -Ri -S ServiceName    # run service
 
-	flagExp2 -Ri -S ServiceName    #remove image`
+	flagExp2 -R -S ServiceName    #remove image`
 
-func RmImage(SerName string) (ImageName string) {
-	//  delete images
-	comands := "/usr/bin/docker images | grep " + SerName + "| awk -F ' ' '{print $(NF-5)}'"
-	cmd := exec.Command("/bin/bash", "-c", comands)
-	if ImageName, err := cmd.Output(); err != nil {
+func RmImage(SerName string) {
+	//  DELETE docker
+	ImageName := ""
+	// exec.Command("docker", "stop", SerName)
+	comandsDelDocker := "/usr/bin/docker rm -f " + SerName
+	cmdDelDocker := exec.Command("/bin/bash", "-c", comandsDelDocker)
+	if _, err := cmdDelDocker.Output(); err != nil {
+		fmt.Println("Error occur when run command delete docker")
+		fmt.Println(err)
+		os.Exit(2)
+	} else {
+		fmt.Printf("Del Docker for %s is Successufl !", SerName)
+	}
+
+	//  find image
+	comandsFindImg := "/usr/bin/docker images | grep " + SerName + "| awk -F ' ' '{print $(NF-5)}'"
+	fmt.Println(comandsFindImg)
+	cmdFindImg := exec.Command("/bin/bash", "-c", comandsFindImg)
+	if Img, err := cmdFindImg.Output(); err != nil {
+		fmt.Println("Error occur when run command find image:")
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		fmt.Println(string(ImageName))
+		ImageName = string(Img)
+		fmt.Print(ImageName)
 	}
 
-	return ImageName
-
+	//   delete Image
+	comandsDelImg := "/usr/bin/docker rmi " + ImageName
+	fmt.Print(comandsDelImg)
+	cmdDelImg := exec.Command("/bin/bash", "-c", comandsDelImg)
+	if _, err := cmdDelImg.Output(); err != nil {
+		fmt.Println("Error occur when run command delete image")
+		fmt.Println(err)
+		os.Exit(2)
+	} else {
+		fmt.Printf("Del Iamge for %s is Successufl !", SerName)
+		os.Exit(0)
+	}
 }
 
 func RunService(SerName string) {
 	// start image with given serivce
+	data, err := ioutil.ReadFile("dockerRunCommand.txt")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(3)
+	}
+	//	fmt.Println(string(data))
+	datas := strings.Split(string(data), "\n")
+	for _, comandsRunDocker := range datas {
+		if strings.Contains(comandsRunDocker, SerName) {
+			fmt.Println(comandsRunDocker)
+		}
+		cmdRun := exec.Command("/bin/bash", "-c", comandsRunDocker)
+		if _, err := cmdRun.Output(); err != nil {
+			fmt.Println("Error occur when run docker")
+			fmt.Println(err)
+			os.Exit(4)
+		} else {
+			fmt.Printf("Run Docker for %s is Successufl !", SerName)
+		}
+	}
 }
-
 func main() {
 	flag.Usage = func() {
 
@@ -99,5 +149,7 @@ func main() {
 		fmt.Println("value of Ri:", *Ri)
 		RmImage(*ServiceName)
 		RunService(*ServiceName)
+	} else {
+		fmt.Println(usageText)
 	}
 }
