@@ -1,0 +1,54 @@
+// This Programe is used for create ok file for crpetl job
+// go version 1.10.3
+
+package main
+
+import (
+ "fmt"
+ "io/ioutil"
+ "os"
+ "strings"
+)
+
+func main() {
+ baseDir := "TEMPFILES" //TEMPFILES
+ dirList, err := ioutil.ReadDir(baseDir)
+ subDir := make([]string, 0) //the length should be 0 , otherwise use append will create blank string
+ if err != nil {
+  fmt.Println(err)
+  os.Exit(1)
+ }
+ for _, dir := range dirList {
+  subDir = append(subDir, dir.Name())
+ }
+ length := len(subDir)
+ os.Chdir(baseDir)
+ for i := 0; i < length; i++ {
+  switch subDir[i] {
+  case "qd", "qdcar":
+   //fmt.Println("creat .ok")
+   os.Chdir(subDir[i])
+   ioutil.WriteFile(".ok", nil, 666)
+   os.Chdir("../")
+  case "goldway":
+   fmt.Println("As the sub directory is golaway , so Do Nothing!")
+  default:
+   subs := make([]string, 0)
+   files, err := ioutil.ReadDir(subDir[i])
+   if err != nil {
+    fmt.Println(err)
+    os.Exit(2)
+   }
+   for _, file := range files {
+    subs = append(subs, file.Name())
+   }
+   os.Chdir(subDir[i])
+   for j := 0; j < len(subs); j++ {
+    filename := strings.TrimSuffix(subs[j], "zip") + "ok"
+    ioutil.WriteFile(filename, nil, 666)
+   }
+   //fmt.Printf("The dir is: %s\n", subDir[i])
+   os.Chdir("../")
+  }
+ }
+}
