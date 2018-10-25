@@ -177,7 +177,7 @@ func CopyFile(src, dst string) (w int64, err error) {
 
 	if b == false {
 
-		err := os.Mkdir(dest_dir, os.ModePerm) //在当前目录下生成md目录
+		err := os.MkdirAll(dest_dir, os.ModePerm) //在当前目录下生成md目录
 
 		if err != nil {
 
